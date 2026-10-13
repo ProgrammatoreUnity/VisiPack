@@ -4,7 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="VisiPack: a visual node editor for Minecraft Java 26.3+ data packs. Exports a ready-to-use .zip.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23c4661f'/%3E%3Crect x='4' y='4' width='24' height='24' fill='none' stroke='%23fff' stroke-opacity='.25' stroke-width='2'/%3E%3Cpath d='M11 9l12 7-12 7 3-7z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a1e24" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f8f6f1" media="(prefers-color-scheme: light)">
+<meta name="application-name" content="VisiPack">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VisiPack">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="icons/favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>@media (display-mode: standalone) { html { background: var(--bg, #111317); } #app { padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); box-sizing: border-box; } }</style>
+<script>
+(function () {
+  var deferred = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferred = e;
+    window.__vpInstall = function () {
+      if (!deferred) return;
+      deferred.prompt();
+      deferred.userChoice.finally(function () { deferred = null; window.__vpInstall = null; });
+    };
+  });
+  window.addEventListener('appinstalled', function () { deferred = null; window.__vpInstall = null; });
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
+  }
+})();
+</script>
 <title>VisiPack</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -489,11 +518,11 @@ pre.code.mini .ln { padding: 0; }
 @media (max-width: 980px) {
   #app { grid-template-columns: minmax(0, 1fr); }
   #center { grid-column: 1; }
-  #left, #right { position: fixed; top: 48px; bottom: 28px; z-index: 60; width: min(330px, 88vw); box-shadow: var(--shadow-pop); transition: transform .22s ease; }
+  #left, #right { position: fixed; top: calc(48px + env(safe-area-inset-top, 0px)); bottom: calc(28px + env(safe-area-inset-bottom, 0px)); z-index: 60; width: min(330px, 88vw); box-shadow: var(--shadow-pop); transition: transform .22s ease; }
   #left { left: 0; transform: translateX(-104%); }
   #right { right: 0; width: min(380px, 92vw); transform: translateX(104%); }
   body.dl-open #left, body.dr-open #right { transform: none; }
-  #scrim { display: block; position: fixed; inset: 48px 0 28px; z-index: 55; background: rgba(8, 9, 11, .45); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  #scrim { display: block; position: fixed; inset: calc(48px + env(safe-area-inset-top, 0px)) 0 calc(28px + env(safe-area-inset-bottom, 0px)); z-index: 55; background: rgba(8, 9, 11, .45); opacity: 0; pointer-events: none; transition: opacity .2s; }
   body.dl-open #scrim, body.dr-open #scrim { opacity: 1; pointer-events: auto; }
   .mob { display: inline-grid; }
   .ver { display: none; }
@@ -2906,7 +2935,7 @@ const ED = {
   menu(x, y, items) {
     this.closeMenu();
     const m = h('div.menu', { role: 'menu' });
-    items.forEach(it => {
+    items.filter(Boolean).forEach(it => {
       if (it === '-') { m.append(h('div.sep')); return; }
       const b = h('button', { type: 'button', role: 'menuitem', class: it.danger ? 'danger' : '' }, it.icon ? icon(it.icon, 15) : h('span.ico'), h('span', it.l), it.k ? h('kbd', it.k) : null);
       b.addEventListener('click', () => { this.closeMenu(); it.act(); });
@@ -3883,6 +3912,7 @@ function wireUI() {
   $('#b-menu').addEventListener('click', e => {
     const r = e.currentTarget.getBoundingClientRect();
     ED.menu(r.right - 260, r.bottom + 6, [
+      window.__vpInstall ? { l: 'Install as app', icon: 'dl', act: () => window.__vpInstall() } : null,
       { l: 'Projects…', icon: 'folder', act: () => App.projects() },
       { l: 'Export project (.json)', icon: 'dl', act: () => App.exportProject() },
       { l: 'Import project (.json)', icon: 'ul', act: () => App.importProject() },
